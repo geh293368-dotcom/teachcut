@@ -1,160 +1,128 @@
-# OpenShot Video Editor
+# OpenShot 视频编辑器
 
-OpenShot Video Editor is an award-winning free and open-source video editor 
-for Linux, Mac, and Windows, and is dedicated to delivering high quality 
-video editing and animation solutions to the world.
+OpenShot Video Editor 是一款屡获殊荣的免费开源视频编辑器，支持 Linux、Mac 和 Windows，致力于为全球用户提供高质量的视频编辑和动画制作解决方案。
 
-## Build Status
+## 构建状态
 
-[![openshot-qt CI Build](https://github.com/OpenShot/openshot-qt/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenShot/openshot-qt/actions/workflows/ci.yml) 
-[![libopenshot CI Build](https://github.com/OpenShot/libopenshot/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenShot/libopenshot/actions/workflows/ci.yml) 
+[![openshot-qt CI Build](https://github.com/OpenShot/openshot-qt/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenShot/openshot-qt/actions/workflows/ci.yml)
+[![libopenshot CI Build](https://github.com/OpenShot/libopenshot/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenShot/libopenshot/actions/workflows/ci.yml)
 [![libopenshot-audio CI Build](https://github.com/OpenShot/libopenshot-audio/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenShot/libopenshot-audio/actions/workflows/ci.yml)
 ![Discord](https://img.shields.io/discord/1143390791507644496?style=flat)
 
-## Features
+## 功能特性
 
-* Cross-platform (Linux, Mac, and Windows)
-* Support for many video, audio, and image formats (based on FFmpeg)
-* Powerful curve-based Key frame animations
-* Desktop integration (drag and drop support)
-* Unlimited tracks / layers
-* Clip resizing, scaling, trimming, snapping, rotation, and cutting
-* Video transitions with real-time previews
-* Compositing, image overlays, watermarks
-* Title templates, title creation, sub-titles
-* 2D animation support (image sequences)
-* 3D animated titles (and effects)
-* SVG friendly, to create and include vector titles and credits
-* Scrolling motion picture credits
-* Advanced Timeline (including Drag & drop, scrolling, panning, zooming, and snapping)
-* Frame accuracy (step through each frame of video)
-* Time-mapping and speed changes on clips (slow/fast, forward/backward, etc...)
-* Audio mixing and editing
-* Digital video effects, including brightness, gamma, hue, greyscale, chroma key, and many more!
-* Experimental hardware encoding and decoding (VA-API, NVDEC, D3D9, D3D11, VTB)
-* Import & Export widely supported formats (EDL, XML)
-* Render videos in many codecs and formats (based on FFmpeg)
+* 跨平台支持（Linux、Mac 和 Windows）
+* 支持多种视频、音频和图像格式（基于 FFmpeg）
+* 强大的基于曲线的关键帧动画
+* 桌面集成（支持拖放）
+* 不限数量的轨道和图层
+* 支持剪辑尺寸调整、缩放、修剪、吸附、旋转和切割
+* 带实时预览的视频转场
+* 合成、图像叠加和水印
+* 标题模板、标题制作和字幕
+* 支持 2D 动画（图像序列）
+* 3D 动画标题和特效
+* 良好支持 SVG，可用于创建和添加矢量标题与演职员表
+* 滚动式影片演职员表
+* 高级时间线（支持拖放、滚动、平移、缩放和吸附）
+* 精确到帧（可逐帧浏览视频）
+* 剪辑时间映射和速度调整（慢放、快放、正放、倒放等）
+* 音频混合与编辑
+* 数字视频特效，包括亮度、伽马、色相、灰度、色度键等多种效果
+* 实验性硬件编码与解码支持（VA-API、NVDEC、D3D9、D3D11、VTB）
+* 导入和导出广泛支持的格式（EDL、XML）
+* 使用多种编解码器和格式渲染视频（基于 FFmpeg）
 
-## Getting Started
+## 快速开始
 
-The quickest way to get started using OpenShot is to download one of 
-our pre-built installers. On our download page, click the **Daily Builds** 
-button to view the latest, experimental builds, which are created for each 
-new commit to this repo.
+开始使用 OpenShot 最快捷的方式是下载预构建安装程序。在[下载页面](https://www.openshot.org/download/)中，点击 **Daily Builds** 按钮即可查看最新的实验性构建版本。仓库每次产生新提交时，都会创建相应的每日构建版本。
 
-https://www.openshot.org/download/
+## 教程
 
-## Tutorial
+你可以观看官方[分步视频教程](https://www.youtube.com/watch?list=PLymupH2aoNQNezYzv2lhSwvoyZgLp1Q0T&v=1k-ISfd-YBE)，或阅读官方[用户指南](https://www.openshot.org/user-guide/)。
 
-Watch the official [step-by-step video tutorial](https://www.youtube.com/watch?list=PLymupH2aoNQNezYzv2lhSwvoyZgLp1Q0T&v=1k-ISfd-YBE), or read the official [user-guide](https://www.openshot.org/user-guide/):
+## 开发者
 
-## Developers
+你是否有兴趣更深入地参与 OpenShot 的开发？你可以构建令人兴奋的新功能、修复缺陷、结识朋友，并成为社区英雄！请阅读[分步说明](https://github.com/OpenShot/openshot-qt/wiki/Become-a-Developer)，了解如何获取源代码、配置依赖项并构建 OpenShot。
 
-Are you interested in becoming more involved in the development of 
-OpenShot? Build exciting new features, fix bugs, make friends, and become a hero! 
-Please read the [step-by-step](https://github.com/OpenShot/openshot-qt/wiki/Become-a-Developer) 
-instructions for getting source code, configuring dependencies, and building OpenShot.
+## 文档
 
-## Documentation
-
-Beautiful HTML documentation can be generated using Sphinx.
+可以使用 Sphinx 生成精美的 HTML 文档。
 
 ```sh
 cd doc
 make html
 ```
 
-The documentation for the most recent release can be viewed online at [openshot.org/user-guide](https://www.openshot.org/user-guide/).
+你可以在 [openshot.org/user-guide](https://www.openshot.org/user-guide/) 在线查看最新发布版本的文档。
 
-## Report a bug
+## 报告缺陷
 
-Please report bugs using the official [Report a Bug](https://www.openshot.org/issues/new/) 
-feature on our website. This walks you through the bug reporting process, and helps 
-to create a high-quality bug report for the OpenShot community.
+请使用我们网站上的官方[缺陷报告](https://www.openshot.org/issues/new/)功能提交问题。该功能会引导你完成缺陷报告流程，并帮助你为 OpenShot 社区创建高质量的问题报告。
 
-Or you can report a new issue directly on GitHub:
+你也可以直接在 GitHub 上提交新问题：
 
 https://github.com/OpenShot/openshot-qt/issues
 
-## Translations
+## 翻译
 
-Translating OpenShot into other languages is very easy! Please read the [step-by-step](https://github.com/OpenShot/openshot-qt/wiki/Become-a-Translator) instructions or login to LaunchPad and get started.
-All you need is a web browser.
+将 OpenShot 翻译成其他语言非常简单！请阅读[分步说明](https://github.com/OpenShot/openshot-qt/wiki/Become-a-Translator)，或者登录 Launchpad 开始翻译。你只需要一个网页浏览器。
 
-* Application Translations: https://translations.launchpad.net/openshot/2.0/+translations
-* Website Translations: https://translations.launchpad.net/openshot/website/+pots/django
+* 应用程序翻译：https://translations.launchpad.net/openshot/2.0/+translations
+* 网站翻译：https://translations.launchpad.net/openshot/website/+pots/django
 
-## Dependencies
+## 依赖项
 
-Although installers are much easier to use, if you must build from 
-source, here are some tips: 
+虽然安装程序更易于使用，但如果你必须从源代码构建，以下提示可以提供帮助。
 
-OpenShot is programmed in Python (version 3+), and thus does not need
-to be compiled to run. However, be sure you have the following 
-dependencies in order to run OpenShot successfully: 
+OpenShot 使用 Python（3.0 及以上版本）编写，因此无需编译即可运行。不过，为确保 OpenShot 正常运行，请安装以下依赖项：
 
-*  Python 3.0+ (http://www.python.org)
-*  PyQt / PySide binding for Qt5 or Qt6 (https://www.riverbankcomputing.com/software/pyqt/ and https://pyside.org/)
-*  libopenshot: OpenShot Library (https://github.com/OpenShot/libopenshot)
-*  libopenshot-audio: OpenShot Audio Library (https://github.com/OpenShot/libopenshot-audio)
-*  FFmpeg or Libav (http://www.ffmpeg.org/ or http://libav.org/)
-*  GCC build tools (or MinGW on Windows)
+* Python 3.0+（http://www.python.org）
+* 用于 Qt5 或 Qt6 的 PyQt / PySide 绑定（https://www.riverbankcomputing.com/software/pyqt/ 和 https://pyside.org/）
+* libopenshot：OpenShot 视频库（https://github.com/OpenShot/libopenshot）
+* libopenshot-audio：OpenShot 音频库（https://github.com/OpenShot/libopenshot-audio）
+* FFmpeg 或 Libav（http://www.ffmpeg.org/ 或 http://libav.org/）
+* GCC 构建工具（Windows 上也可使用 MinGW）
 
-For packagers and developers: use `OPENSHOT_QT_API=auto|pyqt6|pyside6|pyqt5`
-to select the Python Qt binding. If building `libopenshot`, its Qt major
-version is selected separately with `-DUSE_QT6=AUTO|ON|OFF`.
+软件包维护者和开发者可以使用 `OPENSHOT_QT_API=auto|pyqt6|pyside6|pyqt5` 选择 Python Qt 绑定。构建 `libopenshot` 时，其 Qt 主版本需通过 `-DUSE_QT6=AUTO|ON|OFF` 单独选择。
 
-## Launch
+## 启动
 
-To run OpenShot from the command line with an installed `libopenshot`,
-use the following syntax:
-(be sure the change the path to match the install or repo location 
-of openshot-qt)
+如果系统中已安装 `libopenshot`，可以使用以下命令从命令行运行 OpenShot。请根据安装位置或 openshot-qt 仓库位置调整路径：
 
 ```sh
 cd [openshot-qt folder]
 python3 src/launch.py
 ```
-    
-To run with a version of `libopenshot` built from source but not installed,
-set `PYTHONPATH` to the location of the compiled Python bindings. e.g.:
+
+如果使用从源代码构建但尚未安装的 `libopenshot`，请将 `PYTHONPATH` 设置为已编译 Python 绑定所在的位置。例如：
 
 ```sh
 cd [libopenshot folder]
 cmake -B build -S . [options]
 cmake --build build
-    
+
 cd [openshot-qt folder]
 PYTHONPATH=[libopenshot folder]/build/bindings/python \
 python3 src/launch.py
 ```
 
-## Websites
+## 相关网站
 
-- https://www.openshot.org/  (Official website and blog)
-- https://github.com/OpenShot/openshot-qt (source code and issue tracker)
-- https://github.com/OpenShot/libopenshot-audio (source code for audio library)
-- https://github.com/OpenShot/libopenshot (source code for video library)
+- https://www.openshot.org/（官方网站和博客）
+- https://github.com/OpenShot/openshot-qt（源代码和问题跟踪）
+- https://github.com/OpenShot/libopenshot-audio（音频库源代码）
+- https://github.com/OpenShot/libopenshot（视频库源代码）
 - https://launchpad.net/openshot/
 
-### Copyright & License
+### 版权与许可证
 
-Copyright (c) 2008-2022 OpenShot Studios, LLC. This file is part of
-OpenShot Video Editor (https://www.openshot.org), an open-source project
-dedicated to delivering high quality video editing and animation solutions
-to the world.
+版权所有 © 2008–2022 OpenShot Studios, LLC。本文件是 OpenShot Video Editor（https://www.openshot.org）的一部分。OpenShot 是一个开源项目，致力于为全球用户提供高质量的视频编辑和动画制作解决方案。
 
-OpenShot Video Editor is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+OpenShot Video Editor 是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证条款重新发布和修改本软件，可选择该许可证第 3 版或任何后续版本。
 
-OpenShot Video Editor is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+发布 OpenShot Video Editor 的目的是希望它能发挥作用，但不提供任何担保；甚至不提供适销性或特定用途适用性的默示担保。详情请参阅 GNU 通用公共许可证。
 
-You should have received a copy of the GNU General Public License
-along with OpenShot Library.  If not, see <http://www.gnu.org/licenses/>.
+你应当已经随 OpenShot Library 收到一份 GNU 通用公共许可证；如果没有，请访问 <http://www.gnu.org/licenses/>。
 
-<!-- Repository sync verified on 2026-07-11. -->
+<!-- 已于 2026-07-11 验证仓库同步。 -->
