@@ -1,0 +1,19 @@
+{
+  "libopenshotAudio": {
+    "repository": "https://github.com/OpenShot/libopenshot-audio.git",
+    "revision": "48516e0b64b9f3ddf2ab79975a42ba2f37023703"
+  },
+  "libopenshot": {
+    "repository": "https://github.com/OpenShot/libopenshot.git",
+    "revision": "8f1f091c1d90f9b1acbef45ed09fb3f440d85a94"
+  },
+  "validatedToolchain": {
+    "msys2": "2026-03-22",
+    "python": "3.14.6",
+    "cmake": "4.4.0",
+    "ffmpeg": "8.1.2",
+    "qt": "5.15.19",
+    "opencv": "4.13.0",
+    "cxFreeze": "8.6.4"
+  }
+}

@@ -1,0 +1,25 @@
+# Packages installed by build-windows.ps1 -Bootstrap and GitHub Windows CI.
+git
+mingw-w64-x86_64-gcc
+mingw-w64-x86_64-cmake
+mingw-w64-x86_64-ninja
+mingw-w64-x86_64-pkgconf
+mingw-w64-x86_64-qt5-base
+mingw-w64-x86_64-qt5-svg
+mingw-w64-x86_64-qt5-multimedia
+mingw-w64-x86_64-ffmpeg
+mingw-w64-x86_64-opencv
+mingw-w64-x86_64-protobuf
+mingw-w64-x86_64-swig
+mingw-w64-x86_64-zeromq
+mingw-w64-x86_64-cppzmq
+mingw-w64-x86_64-jsoncpp
+mingw-w64-x86_64-python
+mingw-w64-x86_64-python-pip
+mingw-w64-x86_64-python-setuptools
+mingw-w64-x86_64-python-wheel
+mingw-w64-x86_64-python-pyqt5
+mingw-w64-x86_64-python-cx-freeze
+mingw-w64-x86_64-python-pyzmq
+mingw-w64-x86_64-python-pillow
+mingw-w64-x86_64-python-pyopengl

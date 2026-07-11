@@ -517,11 +517,12 @@ class ProxyServiceTests(unittest.TestCase):
          self.assertEqual(submitted[0][1], "F1")
 
      def test_existing_proxy_output_path_reuses_default_name_when_file_exists(self):
+         expected_path = os.path.join("/project/optimized", "clip001_proxy.mp4")
          with patch.object(self.service, "_proxy_root", return_value="/project/optimized"), \
-              patch("classes.proxy_service.os.path.exists", side_effect=lambda path: path == "/project/optimized/clip001_proxy.mp4"):
+              patch("classes.proxy_service.os.path.exists", side_effect=lambda path: path == expected_path):
              existing_path = self.service._existing_proxy_output_path("F2", {"path": "/media/clip001.mov"})
 
-         self.assertEqual(existing_path, "/project/optimized/clip001_proxy.mp4")
+         self.assertEqual(existing_path, expected_path)
 
      def test_get_proxy_state_returns_ready_and_missing(self):
          file_obj = types.SimpleNamespace(
@@ -566,7 +567,7 @@ class ProxyServiceTests(unittest.TestCase):
          self.assertEqual(saved[0], ("F1", {"id": "F1", "path": "/optimized/F1.mp4"}))
          self.assertEqual(saved[1][0], "F2")
          self.assertTrue(saved[1][1]["missing"])
-         self.assertEqual(saved[1][1]["path"], "/optimized/source-b_proxy.mp4")
+         self.assertEqual(saved[1][1]["path"], os.path.join("/optimized", "source-b_proxy.mp4"))
 
      def test_use_existing_for_files_skips_invalid_matches_without_crashing(self):
          file_one = types.SimpleNamespace(id="F1", data={"id": "F1", "path": "/media/source-a.mp4"})
@@ -632,7 +633,7 @@ class ProxyServiceTests(unittest.TestCase):
 
          match_path = self.service._match_existing_optimized_path(file_obj, "/optimized", folder_index)
 
-         self.assertEqual(match_path, "/optimized/clip001_proxy.mp4")
+         self.assertEqual(match_path, os.path.join("/optimized", "clip001_proxy.mp4"))
 
      def test_match_existing_optimized_path_supports_source_name_with_file_id_suffix(self):
          file_obj = types.SimpleNamespace(id="F1", data={"id": "F1", "path": "/media/clip001.mov"})
@@ -694,7 +695,7 @@ class ProxyServiceTests(unittest.TestCase):
               patch("classes.proxy_service.os.makedirs"):
              output_path = self.service._reserve_proxy_output_path("F2", {"path": "/media/clip001.mov"})
 
-         self.assertEqual(output_path, "/project/optimized/clip001_proxy_F2.mp4")
+         self.assertEqual(output_path, os.path.join("/project/optimized", "clip001_proxy_F2.mp4"))
 
      def test_index_existing_optimized_files_limits_matches_to_common_video_extensions(self):
          def fake_walk(_):
@@ -746,7 +747,10 @@ class ProxyServiceTests(unittest.TestCase):
              deleted = self.service.delete_and_unlink_for_files([file_one, file_two])
 
          self.assertEqual(deleted, 2)
-         self.assertEqual(removed_paths, ["/project/optimized/F1.mp4", "/external/proxy/F2.mp4"])
+         self.assertEqual(removed_paths, [
+             os.path.abspath("/project/optimized/F1.mp4"),
+             os.path.abspath("/external/proxy/F2.mp4"),
+         ])
          fresh_one.save.assert_called_once_with()
          fresh_two.save.assert_called_once_with()
          self.assertEqual(delete_calls, [

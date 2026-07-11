@@ -5,6 +5,7 @@ OpenShot Video Editor 是一款屡获殊荣的免费开源视频编辑器，支�
 ## 构建状态
 
 [![openshot-qt CI Build](https://github.com/OpenShot/openshot-qt/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenShot/openshot-qt/actions/workflows/ci.yml)
+[![TeachCut Windows CI](https://github.com/geh293368-dotcom/teachcut/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/geh293368-dotcom/teachcut/actions/workflows/windows-ci.yml)
 [![libopenshot CI Build](https://github.com/OpenShot/libopenshot/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenShot/libopenshot/actions/workflows/ci.yml)
 [![libopenshot-audio CI Build](https://github.com/OpenShot/libopenshot-audio/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenShot/libopenshot-audio/actions/workflows/ci.yml)
 ![Discord](https://img.shields.io/discord/1143390791507644496?style=flat)
@@ -44,6 +45,16 @@ OpenShot Video Editor 是一款屡获殊荣的免费开源视频编辑器，支�
 ## 开发者
 
 你是否有兴趣更深入地参与 OpenShot 的开发？你可以构建令人兴奋的新功能、修复缺陷、结识朋友，并成为社区英雄！请阅读[分步说明](https://github.com/OpenShot/openshot-qt/wiki/Become-a-Developer)，了解如何获取源代码、配置依赖项并构建 OpenShot。
+
+### Windows 开发构建
+
+TeachCut 分支提供 Win11 x64 一键构建入口，统一完成原生库编译、Python 测试、cx_Freeze 打包和程序启动检查：
+
+```powershell
+.\scripts\build-windows.ps1
+```
+
+首次配置、依赖锁定和 RTX 显卡验证方法见 [Windows 构建与验证](scripts/README-windows.md)。
 
 ## 文档
 
