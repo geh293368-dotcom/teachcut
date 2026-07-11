@@ -70,6 +70,10 @@ namespace openshot {
 		 */
 		int HARDWARE_DECODER = 0;
 
+		/// Keep eligible standalone D3D11 decoded frames on the GPU until CPU pixels are requested.
+		/// This is an experimental foundation switch and remains disabled by default.
+		bool ENABLE_D3D11_ZERO_COPY = false;
+
 		/// Scale mode used in FFmpeg decoding and encoding (used as an optimization for faster previews)
 		bool HIGH_QUALITY_SCALING = false;
 

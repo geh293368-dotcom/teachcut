@@ -62,6 +62,7 @@ set(OPENSHOT_SOURCES
   ClipBase.cpp
   Coordinate.cpp
   CrashHandler.cpp
+  D3D11DeviceManager.cpp
   DummyReader.cpp
   ReaderBase.cpp
   RendererBase.cpp
@@ -72,6 +73,7 @@ set(OPENSHOT_SOURCES
   FFmpegWriter.cpp
   Fraction.cpp
   Frame.cpp
+  GpuFrame.cpp
   FrameScope.cpp
   FrameMapper.cpp
   MemoryTrim.cpp
@@ -589,7 +591,7 @@ endif()
 
 if(WIN32)
   # Required for exception handling on Windows
-  target_link_libraries(openshot PUBLIC "imagehlp" "dbghelp" )
+  target_link_libraries(openshot PUBLIC "imagehlp" "dbghelp" "d3d11" "dxgi" )
 endif()
 
 ###

@@ -41,6 +41,14 @@ namespace openshot
 {
 	class AudioBufferSource;
 	class AudioResampler;
+	class FFmpegReader;
+	class GpuFrameSurface;
+
+	enum FrameStorageMode {
+		FRAME_STORAGE_CPU = 0,
+		FRAME_STORAGE_D3D11 = 1,
+		FRAME_STORAGE_D3D11_MATERIALIZED = 2,
+	};
 	/**
 	 * @brief This class represents a single frame of video (i.e. image & audio data)
 	 *
@@ -90,6 +98,7 @@ namespace openshot
 	{
 	private:
 		std::shared_ptr<QImage> image;
+		std::shared_ptr<GpuFrameSurface> gpu_surface;
 		std::shared_ptr<QImage> wave_image;
 
 		std::shared_ptr<QApplication> previewApp;
@@ -111,6 +120,10 @@ namespace openshot
 
 		/// Constrain a color value from 0 to 255
 		int constrain(int color_value);
+
+		/// Attach an immutable D3D11 surface. Only FFmpegReader can create GPU-backed frames.
+		void AddGpuSurface(std::shared_ptr<GpuFrameSurface> surface);
+		friend class FFmpegReader;
 
 	public:
 		std::shared_ptr<juce::AudioBuffer<float>> audio;
@@ -205,6 +218,18 @@ namespace openshot
 
 		/// Get pointer to Qt QImage image object
 		std::shared_ptr<QImage> GetImage();
+
+		/// Return how the video pixels are currently stored.
+		FrameStorageMode StorageMode() const;
+
+		/// Return true while the original decoded D3D11 surface is retained.
+		bool HasGpuSurface() const { return gpu_surface != nullptr; }
+
+		/// Number of lazy GPU-to-CPU materializations requested for this surface.
+		uint64_t GpuDownloadCount() const;
+
+		/// Total time spent lazily materializing this surface, in nanoseconds.
+		uint64_t GpuDownloadNanoseconds() const;
 
 		/// Set Pixel Aspect Ratio
 		openshot::Fraction GetPixelRatio() { return pixel_ratio; };

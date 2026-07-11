@@ -26,7 +26,9 @@
 #include "effects/CropHelpers.h"
 
 #include "FFmpegReader.h"
+#include "D3D11DeviceManager.h"
 #include "Exceptions.h"
+#include "GpuFrame.h"
 #include "MemoryTrim.h"
 #include "Timeline.h"
 #include "ZmqLogger.h"
@@ -403,6 +405,15 @@ void FFmpegReader::Open() {
 								hw_de_av_device_type = AV_HWDEVICE_TYPE_DXVA2;
 								break;
 						}
+						if (hw_de_av_device_type == AV_HWDEVICE_TYPE_D3D11VA
+								&& Settings::Instance()->ENABLE_D3D11_ZERO_COPY) {
+							// Retained GPU frames occupy decoder surfaces. Reserve enough for
+							// the preview-ahead cache plus codec reference frames.
+							pCodecCtx->extra_hw_frames = std::max(
+								32,
+								Settings::Instance()->VIDEO_CACHE_MAX_PREROLL_FRAMES + 16
+							);
+						}
 #elif defined(__APPLE__)
 						adapter_ptr = NULL;
 						i_decoder_hw = openshot::Settings::Instance()->HARDWARE_DECODER;
@@ -440,7 +451,13 @@ void FFmpegReader::Open() {
 
 					hw_device_ctx = NULL;
 					// Here the first hardware initialisations are made
-					if (av_hwdevice_ctx_create(&hw_device_ctx, hw_de_av_device_type, adapter_ptr, NULL, 0) >= 0) {
+					if (hw_de_av_device_type == AV_HWDEVICE_TYPE_D3D11VA) {
+						hw_device_ctx = D3D11DeviceManager::Instance().CreateFFmpegDeviceContext(adapter_num);
+					}
+					const int hardware_device_result = hw_device_ctx
+						? 0
+						: av_hwdevice_ctx_create(&hw_device_ctx, hw_de_av_device_type, adapter_ptr, NULL, 0);
+					if (hardware_device_result >= 0) {
 						const char* hw_name = av_hwdevice_get_type_name(hw_de_av_device_type);
 						std::string hw_msg = "HW decode active: ";
 						hw_msg += (hw_name ? hw_name : "unknown");
@@ -724,8 +741,19 @@ void FFmpegReader::Open() {
 		previous_packet_location.sample_start = 0;
 
 		// Adjust cache size based on size of frame and audio
-		const int working_cache_frames = std::max(Settings::Instance()->CACHE_MIN_FRAMES, int(OPEN_MP_NUM_PROCESSORS * info.fps.ToDouble() * 2));
-		const int final_cache_frames = std::max(Settings::Instance()->CACHE_MIN_FRAMES, OPEN_MP_NUM_PROCESSORS * 2);
+		// A D3D11-backed Frame retains one surface from FFmpeg's fixed decoder
+		// pool. Keep the two reader caches within a conservative preview window;
+		// the normal CPU path can continue scaling its cache with core count.
+		bool bounded_gpu_cache = false;
+#if USE_HW_ACCEL
+		bounded_gpu_cache = ShouldKeepD3D11FrameOnGpu();
+#endif
+		const int working_cache_frames = bounded_gpu_cache
+			? 20
+			: std::max(Settings::Instance()->CACHE_MIN_FRAMES, int(OPEN_MP_NUM_PROCESSORS * info.fps.ToDouble() * 2));
+		const int final_cache_frames = bounded_gpu_cache
+			? 20
+			: std::max(Settings::Instance()->CACHE_MIN_FRAMES, OPEN_MP_NUM_PROCESSORS * 2);
 		working_cache.SetMaxBytesFromInfo(working_cache_frames, info.width, info.height, info.sample_rate, info.channels);
 		final_cache.SetMaxBytesFromInfo(final_cache_frames, info.width, info.height, info.sample_rate, info.channels);
 
@@ -762,16 +790,34 @@ void FFmpegReader::Close() {
 		// Keep track of most recent packet
 		AVPacket *recent_packet = packet;
 
+		// GPU-backed frames retain fixed-pool decoder surfaces. Release internal
+		// caches and discard pending video output instead of draining it back into
+		// those caches. avcodec_flush_buffers() below safely releases the decoder's
+		// remaining references; audio can still be drained normally.
+		const bool discard_gpu_video = metric_gpu_frames_retained.load() > 0;
+		if (discard_gpu_video) {
+			final_cache.Clear();
+			working_cache.Clear();
+			last_video_frame.reset();
+			last_final_video_frame.reset();
+		}
+
 		// Drain any packets from the decoder
 		packet = NULL;
 		int attempts = 0;
 		int max_attempts = 128;
-		while (packet_status.packets_decoded() < packet_status.packets_read() && attempts < max_attempts) {
+		auto needs_drain = [&]() {
+			const bool video_pending = !discard_gpu_video
+				&& packet_status.video_decoded < packet_status.video_read;
+			const bool audio_pending = packet_status.audio_decoded < packet_status.audio_read;
+			return video_pending || audio_pending;
+		};
+		while (needs_drain() && attempts < max_attempts) {
 			ZmqLogger::Instance()->AppendDebugMethod("FFmpegReader::Close (Drain decoder loop)",
 													 "packets_read", packet_status.packets_read(),
 													 "packets_decoded", packet_status.packets_decoded(),
 													 "attempts", attempts);
-			if (packet_status.video_decoded < packet_status.video_read) {
+			if (!discard_gpu_video && packet_status.video_decoded < packet_status.video_read) {
 				ProcessVideoPacket(info.video_length);
 			}
 			if (packet_status.audio_decoded < packet_status.audio_read) {
@@ -805,6 +851,9 @@ void FFmpegReader::Close() {
 			}
 			if (pFrameRGB_cached) {
 				AV_FREE_FRAME(&pFrameRGB_cached);
+			}
+			if (pFrameGpu) {
+				AV_FREE_FRAME(&pFrameGpu);
 			}
 		}
 
@@ -1563,6 +1612,8 @@ int FFmpegReader::GetNextPacket() {
 // Get an AVFrame (if any)
 bool FFmpegReader::GetAVFrame() {
 	int frameFinished = 0;
+	if (pFrameGpu)
+		AV_FREE_FRAME(&pFrameGpu);
 	auto note_hw_decode_failure = [&](int err, const char* stage) {
 #if USE_HW_ACCEL
 		if (!hw_de_on || !hw_de_supported || force_sw_decode) {
@@ -1637,7 +1688,13 @@ bool FFmpegReader::GetAVFrame() {
 		}
 		pFrame = AV_ALLOCATE_FRAME();
 		while (receive_frame_err >= 0) {
+			const auto receive_started = std::chrono::steady_clock::now();
 			receive_frame_err = avcodec_receive_frame(pCodecCtx, next_frame2);
+			metric_receive_frame_nanoseconds.fetch_add(static_cast<uint64_t>(
+				std::chrono::duration_cast<std::chrono::nanoseconds>(
+					std::chrono::steady_clock::now() - receive_started
+				).count()
+			));
 
 			if (receive_frame_err != 0) {
 				ZmqLogger::Instance()->AppendDebugMethod("FFmpegReader::GetAVFrame (receive frame: frame not ready yet from decoder [\" + av_err2string(receive_frame_err) + \"])", "receive_frame_err", receive_frame_err, "send_packet_pts", send_packet_pts);
@@ -1668,11 +1725,26 @@ bool FFmpegReader::GetAVFrame() {
 				break;
 			}
 
-#if USE_HW_ACCEL
+			bool keep_gpu_frame = false;
+			#if USE_HW_ACCEL
 			if (hw_de_on && hw_de_supported) {
 				int err;
 				if (next_frame2->format == hw_de_av_pix_fmt) {
-					if ((err = av_hwframe_transfer_data(next_frame, next_frame2, 0)) < 0) {
+					metric_hardware_frames.fetch_add(1);
+					keep_gpu_frame = ShouldKeepD3D11FrameOnGpu() && next_frame2->format == AV_PIX_FMT_D3D11;
+					if (keep_gpu_frame) {
+						decoded_frame = next_frame2;
+					} else {
+						const auto download_started = std::chrono::steady_clock::now();
+						err = av_hwframe_transfer_data(next_frame, next_frame2, 0);
+						metric_gpu_downloads.fetch_add(1);
+						metric_gpu_download_nanoseconds.fetch_add(static_cast<uint64_t>(
+							std::chrono::duration_cast<std::chrono::nanoseconds>(
+								std::chrono::steady_clock::now() - download_started
+							).count()
+						));
+					}
+					if (!keep_gpu_frame && err < 0) {
 						ZmqLogger::Instance()->AppendDebugMethod(
 							"FFmpegReader::GetAVFrame (Failed to transfer data to output frame)",
 							"hw_de_on", hw_de_on,
@@ -1680,7 +1752,7 @@ bool FFmpegReader::GetAVFrame() {
 						note_hw_decode_failure(AVERROR_INVALIDDATA, "hwframe_transfer");
 						break;
 					}
-					if ((err = av_frame_copy_props(next_frame, next_frame2)) < 0) {
+					if (!keep_gpu_frame && (err = av_frame_copy_props(next_frame, next_frame2)) < 0) {
 						ZmqLogger::Instance()->AppendDebugMethod(
 							"FFmpegReader::GetAVFrame (Failed to copy props to output frame)",
 							"hw_de_on", hw_de_on,
@@ -1688,16 +1760,17 @@ bool FFmpegReader::GetAVFrame() {
 						note_hw_decode_failure(AVERROR_INVALIDDATA, "hwframe_copy_props");
 						break;
 					}
-					if (next_frame->format == AV_PIX_FMT_NONE) {
+					if (!keep_gpu_frame && next_frame->format == AV_PIX_FMT_NONE) {
 						next_frame->format = pCodecCtx->sw_pix_fmt;
 					}
-					if (next_frame->width <= 0) {
+					if (!keep_gpu_frame && next_frame->width <= 0) {
 						next_frame->width = next_frame2->width;
 					}
-					if (next_frame->height <= 0) {
+					if (!keep_gpu_frame && next_frame->height <= 0) {
 						next_frame->height = next_frame2->height;
 					}
-					decoded_frame = next_frame;
+					if (!keep_gpu_frame)
+						decoded_frame = next_frame;
 				} else {
 					// Some hardware decoders can still return software-readable frames.
 					decoded_frame = next_frame2;
@@ -1729,6 +1802,7 @@ bool FFmpegReader::GetAVFrame() {
 			}
 #endif
 			packet_status.video_decoded++;
+			metric_frames_decoded.fetch_add(1);
 
 			// Allocate image (align 32 for simd)
 			AVPixelFormat decoded_pix_fmt = (AVPixelFormat)(decoded_frame->format);
@@ -1736,19 +1810,31 @@ bool FFmpegReader::GetAVFrame() {
 				decoded_pix_fmt = (AVPixelFormat)(pStream->codecpar->format);
 			const int decoded_width = decoded_frame->width > 0 ? decoded_frame->width : info.width;
 			const int decoded_height = decoded_frame->height > 0 ? decoded_frame->height : info.height;
-			if (AV_ALLOCATE_IMAGE(pFrame, decoded_pix_fmt, decoded_width, decoded_height) <= 0) {
-				throw OutOfMemory("Failed to allocate image buffer", path);
-			}
-			av_image_copy(pFrame->data, pFrame->linesize, (const uint8_t**)decoded_frame->data, decoded_frame->linesize,
+			if (keep_gpu_frame) {
+				pFrameGpu = av_frame_clone(decoded_frame);
+				if (!pFrameGpu)
+					throw OutOfMemory("Failed to retain D3D11 video surface", path);
+				AV_FREE_FRAME(&pFrame);
+				metric_gpu_frames_retained.fetch_add(1);
+			} else {
+				if (AV_ALLOCATE_IMAGE(pFrame, decoded_pix_fmt, decoded_width, decoded_height) <= 0) {
+					throw OutOfMemory("Failed to allocate image buffer", path);
+				}
+				av_image_copy(pFrame->data, pFrame->linesize, (const uint8_t**)decoded_frame->data, decoded_frame->linesize,
 										decoded_pix_fmt, decoded_width, decoded_height);
-			pFrame->format = decoded_pix_fmt;
-			pFrame->width = decoded_width;
-			pFrame->height = decoded_height;
-			pFrame->color_range = decoded_frame->color_range;
-			pFrame->colorspace = decoded_frame->colorspace;
-			pFrame->color_primaries = decoded_frame->color_primaries;
-			pFrame->color_trc = decoded_frame->color_trc;
-			pFrame->chroma_location = decoded_frame->chroma_location;
+				metric_cpu_frame_copies.fetch_add(1);
+				const int copied_bytes = av_image_get_buffer_size(decoded_pix_fmt, decoded_width, decoded_height, 1);
+				if (copied_bytes > 0)
+					metric_cpu_frame_copy_bytes.fetch_add(static_cast<uint64_t>(copied_bytes));
+				pFrame->format = decoded_pix_fmt;
+				pFrame->width = decoded_width;
+				pFrame->height = decoded_height;
+				pFrame->color_range = decoded_frame->color_range;
+				pFrame->colorspace = decoded_frame->colorspace;
+				pFrame->color_primaries = decoded_frame->color_primaries;
+				pFrame->color_trc = decoded_frame->color_trc;
+				pFrame->chroma_location = decoded_frame->chroma_location;
+			}
 
 			// Get display PTS from video frame, often different than packet->pts.
 			// Sending packets to the decoder (i.e. packet->pts) is async,
@@ -1830,6 +1916,46 @@ bool FFmpegReader::HardwareDecodeSuccessful() const {
 #else
 	return false;
 #endif
+}
+
+#if USE_HW_ACCEL
+bool FFmpegReader::ShouldKeepD3D11FrameOnGpu() {
+	return Settings::Instance()->ENABLE_D3D11_ZERO_COPY
+		&& hw_de_av_device_type == AV_HWDEVICE_TYPE_D3D11VA
+		&& ParentClip() == nullptr
+		&& std::abs(source_rotation) < 0.01;
+}
+#endif
+
+std::string FFmpegReader::PerformanceMetricsJson() const {
+	Json::Value metrics;
+	metrics["frames_decoded"] = static_cast<Json::UInt64>(metric_frames_decoded.load());
+	metrics["hardware_frames"] = static_cast<Json::UInt64>(metric_hardware_frames.load());
+	metrics["gpu_frames_retained"] = static_cast<Json::UInt64>(metric_gpu_frames_retained.load());
+	metrics["gpu_downloads"] = static_cast<Json::UInt64>(metric_gpu_downloads.load());
+	metrics["gpu_download_ms"] = metric_gpu_download_nanoseconds.load() / 1000000.0;
+	metrics["cpu_frame_copies"] = static_cast<Json::UInt64>(metric_cpu_frame_copies.load());
+	metrics["cpu_frame_copy_bytes"] = static_cast<Json::UInt64>(metric_cpu_frame_copy_bytes.load());
+	metrics["receive_frame_ms"] = metric_receive_frame_nanoseconds.load() / 1000000.0;
+	metrics["color_convert_ms"] = metric_color_convert_nanoseconds.load() / 1000000.0;
+	auto& d3d11 = D3D11DeviceManager::Instance();
+	metrics["shared_d3d11_device"] = d3d11.IsReady();
+	metrics["d3d11_adapter_index"] = d3d11.AdapterIndex();
+	metrics["d3d11_adapter_name"] = d3d11.AdapterName();
+	metrics["d3d11_adapter_luid"] = d3d11.AdapterLuid();
+	return metrics.toStyledString();
+}
+
+void FFmpegReader::ResetPerformanceMetrics() {
+	metric_frames_decoded.store(0);
+	metric_hardware_frames.store(0);
+	metric_gpu_frames_retained.store(0);
+	metric_gpu_downloads.store(0);
+	metric_gpu_download_nanoseconds.store(0);
+	metric_cpu_frame_copies.store(0);
+	metric_cpu_frame_copy_bytes.store(0);
+	metric_receive_frame_nanoseconds.store(0);
+	metric_color_convert_nanoseconds.store(0);
 }
 
 // Check the current seek position and determine if we need to seek again
@@ -1930,6 +2056,21 @@ void FFmpegReader::ProcessVideoPacket(int64_t requested_frame) {
 
 	// Debug output
 	ZmqLogger::Instance()->AppendDebugMethod("FFmpegReader::ProcessVideoPacket (Before)", "requested_frame", requested_frame, "current_frame", current_frame);
+
+	if (pFrameGpu) {
+		auto surface = GpuFrameSurface::CreateFromD3D11Frame(pFrameGpu);
+		AV_FREE_FRAME(&pFrameGpu);
+		if (!surface) {
+			hw_decode_failed = true;
+			return;
+		}
+		auto gpu_frame = CreateFrame(current_frame);
+		gpu_frame->AddGpuSurface(surface);
+		working_cache.Add(gpu_frame);
+		last_video_frame = gpu_frame;
+		video_pts_seconds = (double(video_pts) * info.video_timebase.ToDouble()) + pts_offset_seconds;
+		return;
+	}
 
 	// Init some things local (for OpenMP)
 	AVPixelFormat decoded_pix_fmt = (pFrame && pFrame->format != AV_PIX_FMT_NONE)
@@ -2094,8 +2235,14 @@ void FFmpegReader::ProcessVideoPacket(int64_t requested_frame) {
 	}
 
 	// Resize / Convert to RGB
+	const auto convert_started = std::chrono::steady_clock::now();
 	const int scaled_lines = sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0,
 			  original_height, pFrameRGB->data, pFrameRGB->linesize);
+	metric_color_convert_nanoseconds.fetch_add(static_cast<uint64_t>(
+		std::chrono::duration_cast<std::chrono::nanoseconds>(
+			std::chrono::steady_clock::now() - convert_started
+		).count()
+	));
 	if (scaled_lines <= 0) {
 #if USE_HW_ACCEL
 		if (hw_de_on && hw_de_supported && !force_sw_decode) {

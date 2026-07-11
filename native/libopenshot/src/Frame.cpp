@@ -17,6 +17,7 @@
 #include "Frame.h"
 #include "AudioBufferSource.h"
 #include "AudioResampler.h"
+#include "GpuFrame.h"
 #include "QtUtilities.h"
 
 #include <AppConfig.h>
@@ -100,6 +101,9 @@ void Frame::DeepCopy(const Frame& other)
 
 	if (other.image)
 		image = std::make_shared<QImage>(*(other.image));
+	else
+		image.reset();
+	gpu_surface = other.gpu_surface;
 	if (other.audio)
 		audio = std::make_shared<juce::AudioBuffer<float>>(*(other.audio));
 	if (other.wave_image)
@@ -110,6 +114,7 @@ void Frame::DeepCopy(const Frame& other)
 Frame::~Frame() {
 	// Clear all pointers
 	image.reset();
+	gpu_surface.reset();
 	audio.reset();
 	#ifdef USE_OPENCV
 	imagecv.release();
@@ -384,6 +389,11 @@ int64_t Frame::GetBytes()
 		total_bytes += static_cast<int64_t>(
 			width * height * sizeof(char) * 4);
 	}
+	if (gpu_surface) {
+		// Charge GPU surfaces at CPU RGBA cost. This intentionally limits the
+		// number of retained decoder textures below the fixed D3D11 pool size.
+		total_bytes += static_cast<int64_t>(width) * height * 4;
+	}
 	if (audio) {
 		// approximate audio size (sample rate / 24 fps)
 		total_bytes += (sample_rate / 24.0) * sizeof(float);
@@ -396,31 +406,22 @@ int64_t Frame::GetBytes()
 // Get pixel data (as packets)
 const unsigned char* Frame::GetPixels()
 {
-	// Check for blank image
-	if (!image)
-		// Fill with black
-		AddColor(width, height, color);
-
-	// Return array of pixel packets
-	return image->constBits();
+	auto current_image = GetImage();
+	return current_image ? current_image->constBits() : nullptr;
 }
 
 // Get pixel data (for only a single scan-line)
 const unsigned char* Frame::GetPixels(int row)
 {
-	// Check for blank image
-	if (!image)
-		// Fill with black
-		AddColor(width, height, color);
-
-	// Return array of pixel packets
-	return image->constScanLine(row);
+	auto current_image = GetImage();
+	return current_image ? current_image->constScanLine(row) : nullptr;
 }
 
 // Check a specific pixel color value (returns True/False)
 bool Frame::CheckPixel(int row, int col, int red, int green, int blue, int alpha, int threshold) {
 	int col_pos = col * 4; // Find column array position
-	if (!image || row < 0 || row >= (height - 1) ||
+	auto current_image = GetImage();
+	if (!current_image || row < 0 || row >= (height - 1) ||
 		col_pos < 0 || col_pos >= (width - 1) ) {
 		// invalid row / col
 		return false;
@@ -701,6 +702,7 @@ void Frame::AddColor(const QColor& new_color)
 {
 	// Create new image object, and fill with pixel data
 	const std::lock_guard<std::recursive_mutex> lock(addingImageMutex);
+	gpu_surface.reset();
 	image = std::make_shared<QImage>(width, height, QImage::Format_RGBA8888_Premultiplied);
 
 	// Fill with solid color
@@ -739,6 +741,7 @@ void Frame::AddImage(std::shared_ptr<QImage> new_image)
 
 	// assign image data
 	const std::lock_guard<std::recursive_mutex> lock(addingImageMutex);
+	gpu_surface.reset();
 	image = new_image;
 
 	// Always convert to Format_RGBA8888_Premultiplied (if different)
@@ -869,12 +872,42 @@ void Frame::ApplyGainRamp(int destChannel, int destStartSample, int numSamples, 
 // Get pointer to Magick++ image object
 std::shared_ptr<QImage> Frame::GetImage()
 {
-	// Check for blank image
+	const std::lock_guard<std::recursive_mutex> lock(addingImageMutex);
+	if (!image && gpu_surface)
+		image = gpu_surface->DownloadToImage();
 	if (!image)
-		// Fill with black
 		AddColor(width, height, color);
 
 	return image;
+}
+
+void Frame::AddGpuSurface(std::shared_ptr<GpuFrameSurface> surface)
+{
+	if (!surface || !surface->IsValid())
+		return;
+	const std::lock_guard<std::recursive_mutex> lock(addingImageMutex);
+	image.reset();
+	gpu_surface = surface;
+	width = surface->Width();
+	height = surface->Height();
+	has_image_data = true;
+}
+
+FrameStorageMode Frame::StorageMode() const
+{
+	if (gpu_surface)
+		return image ? FRAME_STORAGE_D3D11_MATERIALIZED : FRAME_STORAGE_D3D11;
+	return FRAME_STORAGE_CPU;
+}
+
+uint64_t Frame::GpuDownloadCount() const
+{
+	return gpu_surface ? gpu_surface->DownloadCount() : 0;
+}
+
+uint64_t Frame::GpuDownloadNanoseconds() const
+{
+	return gpu_surface ? gpu_surface->DownloadNanoseconds() : 0;
 }
 
 #ifdef USE_OPENCV
@@ -921,6 +954,7 @@ std::shared_ptr<QImage> Frame::Mat2Qimage(cv::Mat img){
 // Set pointer to OpenCV image object
 void Frame::SetImageCV(cv::Mat _image)
 {
+	gpu_surface.reset();
 	imagecv = _image;
 	image = Mat2Qimage(_image);
 }

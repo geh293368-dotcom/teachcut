@@ -15,7 +15,7 @@
 
 ## 常用命令
 
-完整增量构建、400 项 Python 测试、冻结打包和启动冒烟测试：
+完整增量构建、Python 测试、冻结打包和启动冒烟测试：
 
 ```powershell
 .\scripts\build-windows.ps1
@@ -46,6 +46,14 @@
 ```
 
 也可以传入实际 4K 素材。报告保存在 `build\benchmarks`，机器基线结论记录在 `docs\performance\rtx4090-4k-baseline.md`。
+
+验证实验性 D3D11 共享设备、GPU Frame 保留和按需回读：
+
+```powershell
+.\scripts\verify-d3d11-foundation.ps1
+```
+
+该验证只对独立 `FFmpegReader` 开启零拷贝实验开关；时间线、多轨、特效和正常应用预览仍默认使用已经验证的 CPU/QImage 回退路径。当前实现与 RTX 4090 实测见 [D3D11 零拷贝基础层验证](../docs/performance/d3d11-zero-copy-foundation.md)。
 
 默认输出位置：
 

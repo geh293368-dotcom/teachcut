@@ -23,6 +23,7 @@
 #include "FFmpegUtilities.h"
 
 #include <cmath>
+#include <atomic>
 #include <ctime>
 #include <iostream>
 #include <stdio.h>
@@ -113,6 +114,7 @@ namespace openshot {
 		AVStream *pStream, *aStream;
 		AVPacket *packet;
 		AVFrame *pFrame;
+		AVFrame *pFrameGpu = nullptr;
 		bool is_open;
 		bool is_duration_known;
 		bool check_interlace;
@@ -172,10 +174,20 @@ namespace openshot {
 		bool hw_decode_failed = false;
 		int hw_decode_error_count = 0;
 		bool hw_decode_succeeded = false;
+		std::atomic<uint64_t> metric_frames_decoded{0};
+		std::atomic<uint64_t> metric_hardware_frames{0};
+		std::atomic<uint64_t> metric_gpu_frames_retained{0};
+		std::atomic<uint64_t> metric_gpu_downloads{0};
+		std::atomic<uint64_t> metric_gpu_download_nanoseconds{0};
+		std::atomic<uint64_t> metric_cpu_frame_copies{0};
+		std::atomic<uint64_t> metric_cpu_frame_copy_bytes{0};
+		std::atomic<uint64_t> metric_receive_frame_nanoseconds{0};
+		std::atomic<uint64_t> metric_color_convert_nanoseconds{0};
 #if USE_HW_ACCEL
 		AVPixelFormat hw_de_av_pix_fmt = AV_PIX_FMT_NONE;
 		AVHWDeviceType hw_de_av_device_type = AV_HWDEVICE_TYPE_NONE;
 		int IsHardwareDecodeSupported(int codecid);
+		bool ShouldKeepD3D11FrameOnGpu();
 #endif
 
 		/// Check for the correct frames per second value by scanning the 1st few seconds of video packets.
@@ -303,6 +315,12 @@ namespace openshot {
 
 		/// Return true if hardware decode was requested and successfully produced at least one frame
 		bool HardwareDecodeSuccessful() const override;
+
+		/// Return measured decode, transfer, copy, and color-conversion counters as JSON.
+		std::string PerformanceMetricsJson() const;
+
+		/// Reset all performance counters for this reader.
+		void ResetPerformanceMetrics();
 
 		/// Return the type name of the class
 		std::string Name() override { return "FFmpegReader"; };
