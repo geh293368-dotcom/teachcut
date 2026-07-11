@@ -77,12 +77,12 @@ function Apply-DependencyPatch {
         [Parameter(Mandatory = $true)][string]$DependencyRoot,
         [Parameter(Mandatory = $true)][string]$PatchPath
     )
-    & git -C $DependencyRoot apply --reverse --check $PatchPath 2>$null
+    & git -C $DependencyRoot apply --unidiff-zero --reverse --check $PatchPath 2>$null
     if ($LASTEXITCODE -eq 0) {
         return
     }
     Invoke-External -FilePath "git" -ArgumentList @(
-        "-C", $DependencyRoot, "apply", "--whitespace=nowarn", $PatchPath
+        "-C", $DependencyRoot, "apply", "--unidiff-zero", "--whitespace=nowarn", $PatchPath
     )
 }
 
@@ -124,6 +124,8 @@ if (-not $SkipNative) {
     Ensure-GitDependency $lock.libopenshotAudio $audioSource
     Ensure-GitDependency $lock.libopenshot $libSource
     Apply-DependencyPatch $libSource (Join-Path $PSScriptRoot "patches\libopenshot-gcc16-cstdint.patch")
+    Apply-DependencyPatch $libSource (Join-Path $PSScriptRoot "patches\libopenshot-modern-hardware-decode.patch")
+    Apply-DependencyPatch $libSource (Join-Path $PSScriptRoot "patches\libopenshot-modern-nvenc-options.patch")
 
     $audioBuild = Join-Path $nativeRoot "audio"
     $libBuild = Join-Path $nativeRoot "libopenshot"

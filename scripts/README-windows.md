@@ -39,6 +39,14 @@
 .\scripts\smoke-test-windows.ps1 -VerifyGpu
 ```
 
+运行 4K CPU/NVDEC/D3D11 与 H.264/HEVC/AV1 NVENC 基准：
+
+```powershell
+.\scripts\benchmark-windows-gpu.ps1
+```
+
+也可以传入实际 4K 素材。报告保存在 `build\benchmarks`，机器基线结论记录在 `docs\performance\rtx4090-4k-baseline.md`。
+
 默认输出位置：
 
 - 原生安装树：`build\install-x64`

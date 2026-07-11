@@ -1,0 +1,7 @@
+diff --git a/src/FFmpegReader.cpp b/src/FFmpegReader.cpp
+index fc39431..160926c 100644
+--- a/src/FFmpegReader.cpp
++++ b/src/FFmpegReader.cpp
+@@ -247,0 +248,2 @@ int FFmpegReader::IsHardwareDecodeSupported(int codecid)
++		case AV_CODEC_ID_HEVC:
++		case AV_CODEC_ID_AV1:
