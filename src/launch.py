@@ -43,7 +43,6 @@ Welcome to the OpenShot Video Editor 2.0 Qt documentation. OpenShot was develope
 import sys
 import os
 import argparse
-import json
 import logging
 
 # Ensure Qt plugin DLL dependencies are found on Windows packaged builds.
@@ -64,23 +63,14 @@ try:
 except ImportError:
     pass
 
-# Load user-configured UI scale before importing the Qt binding
-scale = 1.0
+# Load user-configured UI scale before importing the Qt binding. Visual
+# validation can set OPENSHOT_UI_SCALE=1.0 without changing user preferences.
 logger = logging.getLogger(__name__)
-
 settings_path = os.path.join(os.path.expanduser("~/.openshot_qt"), "openshot.settings")
+from classes.ui_scale import UI_SCALE_ENV, resolve_ui_scale
 
-try:
-    if os.path.exists(settings_path):
-        with open(settings_path, "r", encoding="utf-8") as fh:
-            for item in json.load(fh):
-                if item.get("setting") == "ui-scale":
-                    scale = float(item.get("value", scale))
-                    break
-except Exception as exc:
-    logger.warning("Failed to read UI scale from %s: %s", settings_path, exc, exc_info=True)
-scale = max(0.5, min(3.0, scale))
-if scale != 1.0:
+scale = resolve_ui_scale(settings_path, logger=logger)
+if UI_SCALE_ENV in os.environ or scale != 1.0:
     os.environ["QT_SCALE_FACTOR"] = str(scale)
 
 from qt_api import QtCore, QtWidgets

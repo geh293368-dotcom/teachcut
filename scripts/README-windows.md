@@ -11,7 +11,7 @@
 .\scripts\build-windows.ps1 -Bootstrap
 ```
 
-`-Bootstrap` 会安装 `windows-msys2-packages.txt` 中的工具，并安装 `windows-requirements.txt` 中固定版本的 Python 依赖。原生引擎源码已纳入仓库的 `native` 目录；`windows-build-lock.json` 保留其上游来源、导入提交和已验证工具链。
+`-Bootstrap` 会根据 `-QtMajor` 安装 `windows-msys2-packages-qt5.txt` 或 `windows-msys2-packages-qt6.txt` 中的工具，并安装 `windows-requirements.txt` 中固定版本的 Python 依赖。Qt 6 是默认目标，Qt 5 作为可验证的回退路径保留。原生引擎源码已纳入仓库的 `native` 目录；`windows-build-lock.json` 保留其上游来源、导入提交和已验证工具链。
 
 ## 常用命令
 
@@ -19,6 +19,12 @@
 
 ```powershell
 .\scripts\build-windows.ps1
+```
+
+显式构建 Qt 5 回退版本：
+
+```powershell
+.\scripts\build-windows.ps1 -QtMajor 5
 ```
 
 干净重建：
@@ -57,9 +63,10 @@
 
 默认输出位置：
 
-- 原生安装树：`build\install-x64`
-- cx_Freeze 程序目录：`build\exe.*`
-- 主程序：`build\exe.*\openshot-qt.exe`
+- Qt 6 原生安装树：`build\install-x64-qt6`
+- Qt 5 原生安装树：`build\install-x64`
+- cx_Freeze 程序目录：`build\exe.qt6` 或 `build\exe.qt5`
+- 主程序：对应目录下的 `openshot-qt.exe`
 
 ## 可追溯版本包
 
@@ -75,8 +82,8 @@
 .\scripts\package-windows.ps1 -SkipBuild
 ```
 
-成品保存在 `artifacts\windows`，名称格式为 `TeachCut-Windows-yyyyMMdd-HHmmss-提交号.zip`。每个压缩包都包含 `build-manifest.json`，旁边还有 SHA-256 校验文件；存在未提交修改时文件名会带 `-dirty`。日期方便按天查找，提交号负责精确对应源码，同一天多次打包也不会互相覆盖。
+成品保存在 `artifacts\windows`，名称格式为 `TeachCut-Windows-Qt主版本-yyyyMMdd-HHmmss-提交号.zip`。每个压缩包都包含 `build-manifest.json`，旁边还有 SHA-256 校验文件；存在未提交修改时文件名会带 `-dirty`。日期方便按天查找，提交号负责精确对应源码，同一天多次打包也不会互相覆盖。
 
 ## GitHub Windows CI
 
-`.github/workflows/windows-ci.yml` 会在代码推送和拉取请求时启动 GitHub 托管的 Windows 机器。它不需要网页手工构建；网页只负责显示状态、日志和下载版本包。每次成功运行都会上传一个保留 90 天的可追溯 Windows 包。CI 机器没有 RTX 4090，因此会验证 NVENC 编码器是否存在，但实际 NVDEC/D3D11 解码测试只在本机使用 `-VerifyGpu` 执行。
+`.github/workflows/windows-ci.yml` 会在代码推送和拉取请求时分别验证 Qt 5 与 Qt 6。它不需要网页手工构建；网页只负责显示状态、日志和下载版本包。每次成功运行都会上传一个保留 90 天的可追溯 Windows 包。CI 机器没有 RTX 4090，因此会验证 NVENC 编码器是否存在，但实际 NVDEC/D3D11 解码测试只在本机使用 `-VerifyGpu` 执行。

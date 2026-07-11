@@ -2,6 +2,7 @@
 param(
     [string]$MsysRoot = $(if ($env:MSYS2_ROOT) { $env:MSYS2_ROOT } else { "C:\msys64" }),
     [string]$InstallRoot = "",
+    [string]$BundleRoot = "",
     [switch]$VerifyGpu
 )
 
@@ -16,6 +17,8 @@ $python = Join-Path $MsysRoot "mingw64\bin\python.exe"
 $env:PATH = "$(Join-Path $InstallRoot 'bin');$(Join-Path $MsysRoot 'mingw64\bin');$env:PATH"
 $env:PYTHONPATH = "$(Join-Path $InstallRoot 'python');$(Join-Path $repoRoot 'src')"
 $env:QT_QPA_PLATFORM = "offscreen"
+# Keep automated UI validation independent of the user's in-app UI scale.
+$env:OPENSHOT_UI_SCALE = "1.0"
 
 $verifyArgs = @(
     (Join-Path $PSScriptRoot "verify_windows_runtime.py"),
@@ -30,10 +33,14 @@ if ($LASTEXITCODE -ne 0) {
     throw "Native Windows runtime verification failed with exit code $LASTEXITCODE"
 }
 
-$bundle = Get-ChildItem (Join-Path $repoRoot "build") -Directory |
-    Where-Object Name -Like "exe.*" |
-    Sort-Object LastWriteTime -Descending |
-    Select-Object -First 1
+$bundle = if ($BundleRoot) {
+    Get-Item -LiteralPath $BundleRoot -ErrorAction SilentlyContinue
+} else {
+    Get-ChildItem (Join-Path $repoRoot "build") -Directory |
+        Where-Object Name -Like "exe.*" |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+}
 if (-not $bundle) {
     throw "No cx_Freeze bundle was found under build\exe.*"
 }

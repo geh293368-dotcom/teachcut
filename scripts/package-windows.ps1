@@ -2,6 +2,8 @@
 param(
     [ValidateSet("Release", "Debug")]
     [string]$Configuration = "Release",
+    [ValidateSet(5, 6)]
+    [int]$QtMajor = 6,
     [string]$MsysRoot = $(if ($env:MSYS2_ROOT) { $env:MSYS2_ROOT } else { "C:\msys64" }),
     [string]$OutputRoot,
     [switch]$SkipBuild,
@@ -46,13 +48,12 @@ function Remove-SafeStagingPath {
 if (-not $SkipBuild) {
     & (Join-Path $PSScriptRoot "build-windows.ps1") `
         -Configuration $Configuration `
+        -QtMajor $QtMajor `
         -MsysRoot $MsysRoot `
         -VerifyGpu:$VerifyGpu
 }
 
-$frozenRoot = Get-ChildItem -LiteralPath $buildRoot -Directory -Filter "exe.*" -ErrorAction SilentlyContinue |
-    Sort-Object LastWriteTime -Descending |
-    Select-Object -First 1
+$frozenRoot = Get-Item -LiteralPath (Join-Path $buildRoot "exe.qt$QtMajor") -ErrorAction SilentlyContinue
 if (-not $frozenRoot -or -not (Test-Path -LiteralPath (Join-Path $frozenRoot.FullName "openshot-qt.exe") -PathType Leaf)) {
     throw "A frozen TeachCut build was not found under $buildRoot. Run without -SkipBuild first."
 }
@@ -69,7 +70,7 @@ $dirty = $dirtyEntries.Count -gt 0
 $created = Get-Date
 $stamp = $created.ToString("yyyyMMdd-HHmmss")
 $dirtySuffix = if ($dirty) { "-dirty" } else { "" }
-$packageName = "TeachCut-Windows-$stamp-$shortCommit$dirtySuffix"
+$packageName = "TeachCut-Windows-Qt$QtMajor-$stamp-$shortCommit$dirtySuffix"
 
 New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
 $stagingRoot = Join-Path $OutputRoot (".staging-" + [guid]::NewGuid().ToString("N"))
@@ -92,6 +93,7 @@ try {
         product = "TeachCut"
         platform = "windows-x64"
         configuration = $Configuration
+        qtMajor = $QtMajor
         createdAt = $created.ToString("o")
         packageName = $packageName
         git = [ordered]@{
