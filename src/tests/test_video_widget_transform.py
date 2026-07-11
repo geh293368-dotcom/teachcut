@@ -175,8 +175,10 @@ class VideoWidgetTransformTests(unittest.TestCase):
         self.assertEqual(recommended[0]["id"], "yolo26n-seg")
         self.assertEqual(yolo_model_label(recommended[0]), "YOLO26: Nano (recommended, fast)")
         self.assertEqual(yolo_download_button_label(recommended[0]), "Download (10 MB)")
-        self.assertTrue(yolo_model_path(recommended[0]).endswith("yolo26n-seg/model.onnx"))
-        self.assertTrue(yolo_classes_path(recommended[0]).endswith("yolo26n-seg/classes.names"))
+        self.assertTrue(os.path.normpath(yolo_model_path(recommended[0])).endswith(
+            os.path.normpath("yolo26n-seg/model.onnx")))
+        self.assertTrue(os.path.normpath(yolo_classes_path(recommended[0])).endswith(
+            os.path.normpath("yolo26n-seg/classes.names")))
 
     def test_ai_model_manifests_use_shared_catalog_shape(self):
         for manifest in (
@@ -304,13 +306,16 @@ class VideoWidgetTransformTests(unittest.TestCase):
         self.assertTrue(device["advanced"])
         self.assertEqual(device["value"], "CPU")
         self.assertLess(device_index, selector_index)
-        self.assertTrue(efficient_sam["value"].endswith(
-            ".openshot_qt/yolo/efficient-sam-tiny-1024/image_segmentation_efficientsam_ti_2025april.onnx"))
-        self.assertTrue(cutie_key["value"].endswith(".openshot_qt/yolo/cutie-medium/cutie-encode-key-640x368.onnx"))
-        self.assertTrue(cutie_value["value"].endswith(".openshot_qt/yolo/cutie-medium/cutie-encode-value-640x368.onnx"))
-        self.assertTrue(cutie_readout["value"].endswith(
-            ".openshot_qt/yolo/cutie-medium/cutie-memory-readout-floatmask-valid-640x368-m6-topk30-opencv.onnx"))
-        self.assertTrue(cutie_decode["value"].endswith(".openshot_qt/yolo/cutie-medium/cutie-decode-640x368.onnx"))
+        self.assertTrue(os.path.normpath(efficient_sam["value"]).endswith(os.path.normpath(
+            ".openshot_qt/yolo/efficient-sam-tiny-1024/image_segmentation_efficientsam_ti_2025april.onnx")))
+        self.assertTrue(os.path.normpath(cutie_key["value"]).endswith(os.path.normpath(
+            ".openshot_qt/yolo/cutie-medium/cutie-encode-key-640x368.onnx")))
+        self.assertTrue(os.path.normpath(cutie_value["value"]).endswith(os.path.normpath(
+            ".openshot_qt/yolo/cutie-medium/cutie-encode-value-640x368.onnx")))
+        self.assertTrue(os.path.normpath(cutie_readout["value"]).endswith(os.path.normpath(
+            ".openshot_qt/yolo/cutie-medium/cutie-memory-readout-floatmask-valid-640x368-m6-topk30-opencv.onnx")))
+        self.assertTrue(os.path.normpath(cutie_decode["value"]).endswith(os.path.normpath(
+            ".openshot_qt/yolo/cutie-medium/cutie-decode-640x368.onnx")))
         self.assertEqual(selector["type"], "object-mask-selection")
         self.assertEqual(selector["title"], "Select Points")
 

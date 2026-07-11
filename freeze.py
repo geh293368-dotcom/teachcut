@@ -140,7 +140,7 @@ if os.path.exists(openshot_copy_path):
     print("Loaded modules from openshot_qt directory: %s" % openshot_copy_path)
 
 # Detect artifact folder (if any)
-artifact_path = os.path.join(PATH, "build", "install-x64")
+artifact_path = os.getenv("OPENSHOT_ARTIFACT_PATH") or os.path.join(PATH, "build", "install-x64")
 if not os.path.exists(artifact_path):
     artifact_path = os.path.join(PATH, "build", "install-x86")
 if not os.path.exists(artifact_path):
@@ -314,6 +314,9 @@ src_files = []
 external_so_files = []
 build_options = {}
 build_exe_options = {}
+freeze_build_dir = os.getenv("OPENSHOT_FREEZE_BUILD_DIR")
+if freeze_build_dir:
+    build_exe_options["build_exe"] = os.path.abspath(freeze_build_dir)
 exe_name = info.NAME
 
 # Copy QT translations to local folder (to be packaged)
@@ -359,7 +362,7 @@ if sys.platform == "win32":
     extra_exe = {"base": None, "name": exe_name + "-cli.exe"}
 
     # Standard graphical Win32 launcher
-    base = "Win32GUI"
+    base = "gui"
     build_exe_options["include_msvcr"] = True
     exe_name += ".exe"
 
@@ -442,11 +445,26 @@ if sys.platform == "win32":
     else:
         log.warning("OPENCV_ROOT is not set; Windows OpenCV runtime DLLs will rely on cx_Freeze detection.")
 
+    # cx_Freeze stores each binding's Qt plugins in a different package path.
+    # A generic Prefix-only qt.conf makes Qt 6 search <bundle>/platforms and
+    # fail before QApplication can start, so generate the binding-specific path.
+    qt_plugin_relpath = {
+        "pyqt5": "lib/PyQt5/Qt5/plugins",
+        "pyqt6": "lib/PyQt6/plugins",
+        "pyside6": "lib/PySide6/plugins",
+    }[QT_API]
+    runtime_qt_conf = os.path.join(openshot_copy_path, "qt-runtime.conf")
+    with open(runtime_qt_conf, "w", encoding="utf-8", newline="\n") as qt_conf:
+        qt_conf.write("[Paths]\n")
+        qt_conf.write("Prefix = .\n")
+        qt_conf.write("Plugins = {}\n".format(qt_plugin_relpath))
+    src_files.append((runtime_qt_conf, "qt.conf"))
+
     # Append all source files
-    src_files.append((os.path.join(PATH, "installer", "qt.conf"), "qt.conf"))
     for filename in find_files("openshot_qt", ["*"]):
         if should_package_source_file(filename):
-            src_files.append((filename, os.path.join(os.path.relpath(filename, start=openshot_copy_path))))
+            relative_path = os.path.relpath(filename, start=openshot_copy_path)
+            src_files.append((filename, os.path.join("lib", relative_path)))
 
 elif sys.platform == "linux":
     # Find libopenshot.so path (GitLab copies artifacts into local build/install folder)
@@ -679,8 +697,9 @@ elif sys.platform == "darwin":
 build_exe_options["packages"] = python_packages
 build_exe_options["include_files"] = src_files + external_so_files
 build_exe_options["includes"] = python_modules
+inactive_qt_bindings = sorted({"PyQt5", "PyQt6", "PySide6"} - {QT_BINDING_PACKAGE})
 build_exe_options["excludes"] = ["distutils",
-                                 "numpy",
+                                  "numpy",
                                  "setuptools",
                                  "tkinter",
                                  "pydoc_data",
@@ -692,7 +711,7 @@ build_exe_options["excludes"] = ["distutils",
                                  "{}.QtWebEngineWidgets".format(QT_BINDING_PACKAGE),
                                  "{}.QtWebSockets".format(QT_BINDING_PACKAGE),
                                  "{}.QtWebKit".format(QT_BINDING_PACKAGE),
-                                 "{}.QtWebKitWidgets".format(QT_BINDING_PACKAGE)]
+                                  "{}.QtWebKitWidgets".format(QT_BINDING_PACKAGE)] + inactive_qt_bindings
 if sys.platform == "darwin":
     build_exe_options["excludes"].append("sentry_sdk.integrations.django")
 
@@ -703,9 +722,9 @@ build_options["build_exe"] = build_exe_options
 exes = [Executable("openshot_qt/launch.py",
                    base=base,
                    icon=os.path.join(PATH, "xdg", iconFile),
-                   shortcutName="%s" % info.PRODUCT_NAME,
-                   shortcutDir="ProgramMenuFolder",
-                   targetName=exe_name,
+                   shortcut_name="%s" % info.PRODUCT_NAME,
+                   shortcut_dir="ProgramMenuFolder",
+                   target_name=exe_name,
                    copyright=info.COPYRIGHT)]
 
 try:
@@ -713,7 +732,7 @@ try:
     exes.append(Executable("openshot_qt/launch.py",
                 base=extra_exe['base'],
                 icon=os.path.join(PATH, "xdg", iconFile),
-                targetName=extra_exe['name'],
+                target_name=extra_exe['name'],
                 copyright=info.COPYRIGHT))
 except NameError:
     pass

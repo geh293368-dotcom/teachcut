@@ -248,16 +248,19 @@ class JsonDataStore:
 
         elif "@colors" in path:
             new_path = path.replace("@colors", os.path.join(info.COLORS_PATH))
+            new_path = os.path.normpath(new_path)
             new_path = json.dumps(new_path, ensure_ascii=False)
             return '"%s": %s' % (key, new_path)
 
         elif "@emojis" in path:
             new_path = path.replace("@emojis", os.path.join(info.PATH, "emojis", "color", "svg"))
+            new_path = os.path.normpath(new_path)
             new_path = json.dumps(new_path, ensure_ascii=False)
             return '"%s": %s' % (key, new_path)
 
         elif "@assets" in path:
             new_path = path.replace("@assets", path_context["new_project_assets"])
+            new_path = os.path.normpath(new_path)
             new_path = json.dumps(new_path, ensure_ascii=False)
             return '"%s": %s' % (key, new_path)
 

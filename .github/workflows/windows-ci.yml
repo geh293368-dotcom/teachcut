@@ -1,0 +1,49 @@
+name: Windows CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-freeze:
+    name: Windows Qt ${{ matrix.qt-major }}
+    runs-on: windows-2025
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        qt-major: [5, 6]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install MSYS2 toolchain
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: git
+
+      - name: Build, test, freeze, and smoke test
+        shell: pwsh
+        run: .\scripts\build-windows.ps1 -MsysRoot C:\msys64 -QtMajor ${{ matrix.qt-major }} -Bootstrap
+
+      - name: Create traceable Windows package
+        shell: pwsh
+        run: .\scripts\package-windows.ps1 -MsysRoot C:\msys64 -QtMajor ${{ matrix.qt-major }} -SkipBuild
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: TeachCut-Windows-Qt${{ matrix.qt-major }}-${{ github.run_number }}-${{ github.sha }}
+          path: artifacts/windows/*
+          retention-days: 90
+          if-no-files-found: error

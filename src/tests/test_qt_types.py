@@ -13,6 +13,7 @@ if PATH not in sys.path:
     sys.path.append(PATH)
 
 from classes import qt_types
+from qt_api import Qt
 
 
 class _OldIndex:
@@ -44,6 +45,9 @@ class _NewMetrics(_OldMetrics):
 
 
 class QtTypesTests(unittest.TestCase):
+    def test_text_editor_interaction_alias_is_available(self):
+        self.assertTrue(hasattr(Qt, "TextEditorInteraction"))
+
     def test_model_index_sibling_at_column_uses_new_api_when_available(self):
         index = _NewIndex()
 

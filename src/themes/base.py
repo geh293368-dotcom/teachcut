@@ -106,6 +106,17 @@ QLineEdit#txtChangeLogFilter_libopenshot:focus, QLineEdit#txtChangeLogFilter_lib
         image.setDevicePixelRatio(self.app.devicePixelRatio())
         return QIcon(image)
 
+    def create_icon(self, icon_path, size):
+        """Create a theme icon from SVG or any raster format supported by Qt.
+
+        SVG keeps the existing explicit high-DPI rendering path. Raster icons
+        are delegated to QIcon so Qt can discover companions such as
+        ``icon@2x.png`` and select the best representation for the display.
+        """
+        if os.path.splitext(icon_path)[1].lower() == ".svg":
+            return self.create_svg_icon(icon_path, size)
+        return QIcon(icon_path)
+
     def get_color(self, class_name, property_name):
         """Return a QColor from a stylesheet class and property."""
         pattern = rf"{re.escape(class_name)}\s*{{([^}}]*)}}"
@@ -241,7 +252,7 @@ QLineEdit#txtChangeLogFilter_libopenshot:focus, QLineEdit#txtChangeLogFilter_lib
                 button = toolbar.widgetForAction(button_action)
                 button.setObjectName(f"tool-{button_action.objectName()}")
                 if button_icon:
-                    qicon_instance = self.create_svg_icon(button_icon, qsize_icon)
+                    qicon_instance = self.create_icon(button_icon, qsize_icon)
                     button_action.setIcon(qicon_instance)
                 if button_style:
                     button.setToolButtonStyle(button_style)

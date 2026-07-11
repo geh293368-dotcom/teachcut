@@ -742,6 +742,7 @@ QWidget#videoPreview {
     background-color: #141923;
 }
         """
+
         path_unix_slashes = PATH.replace("\\", "/")
         self.style_sheet = f"""
 QMessageBox QPushButton[text="&{_('Yes')}"] {{
@@ -756,6 +757,20 @@ QMessageBox QPushButton[text="&{_('Cancel')}"] {{
 }}
         """ + self.style_sheet.replace("{PATH}", f"{path_unix_slashes}/")
 
+    def create_application_font(self):
+        """Return the application font used by this theme."""
+        from qt_api import QFont
+
+        font = QFont("Ubuntu")
+        font.setPointSizeF(8)
+        return font
+
+    def create_timeline_theme(self):
+        """Return the matching timeline paint theme."""
+        from .styles import CosmicDuskTimelineTheme
+
+        return CosmicDuskTimelineTheme()
+
     def apply_theme(self):
         super().apply_theme()
 
@@ -763,7 +778,6 @@ QMessageBox QPushButton[text="&{_('Cancel')}"] {{
         from classes import ui_util
         from classes.logger import log
         from qt_api import QStyleFactory
-        from qt_api import QFont
 
         _ = get_app()._tr
 
@@ -773,9 +787,7 @@ QMessageBox QPushButton[text="&{_('Cancel')}"] {{
         self.app.setPalette(dark_palette)
 
         # Set font for all widgets
-        font = QFont("Ubuntu")
-        font.setPointSizeF(8)
-        self.app.setFont(font)
+        self.app.setFont(self.create_application_font())
 
         # Move tabs to top (all dock areas, since restoreState() does not persist tab positions)
         for area in (Qt.TopDockWidgetArea, Qt.BottomDockWidgetArea,
@@ -841,8 +853,7 @@ QMessageBox QPushButton[text="&{_('Cancel')}"] {{
         ]
         self.set_toolbar_buttons(self.app.window.videoToolbar, icon_size=32, settings=toolbar_buttons)
 
-        from .styles import CosmicDuskTimelineTheme
-        self.app.window.timeline.apply_theme(CosmicDuskTimelineTheme())
+        self.app.window.timeline.apply_theme(self.create_timeline_theme())
 
         # Emit signal
         self.app.window.ThemeChangedSignal.emit(self)

@@ -9,7 +9,9 @@ doc/_build
 **/__pycache__/
 build
 dist
+/artifacts/
 openshot_qt.egg-info
+*.egg-info/
 
 protobuf_data/
 openshot_qt/

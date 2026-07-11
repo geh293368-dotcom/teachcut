@@ -180,12 +180,12 @@ class FilesModelImportTests(unittest.TestCase):
 
         self.assertEqual(captured["paths"], [
             "/tmp/zeta.mp4",
-            "/tmp/imports/clip_a.mp4",
-            "/tmp/imports/clip_b.mp4",
-            "/tmp/imports/scene_a/take_3.mp4",
-            "/tmp/imports/scene_a/take_4.mp4",
-            "/tmp/imports/scene_b/take_1.mp4",
-            "/tmp/imports/scene_b/take_2.mp4",
+            os.path.join("/tmp/imports", "clip_a.mp4"),
+            os.path.join("/tmp/imports", "clip_b.mp4"),
+            os.path.join("/tmp/imports", "scene_a", "take_3.mp4"),
+            os.path.join("/tmp/imports", "scene_a", "take_4.mp4"),
+            os.path.join("/tmp/imports", "scene_b", "take_1.mp4"),
+            os.path.join("/tmp/imports", "scene_b", "take_2.mp4"),
             "/tmp/alpha.mp4",
         ])
         self.assertTrue(captured["quiet"])
