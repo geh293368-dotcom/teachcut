@@ -17,14 +17,13 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $buildRoot = Join-Path $repoRoot "build"
-$depsRoot = Join-Path $buildRoot "deps"
+$sourceRoot = Join-Path $repoRoot "native"
 $nativeRoot = Join-Path $buildRoot "native"
 $installRoot = Join-Path $buildRoot "install-x64"
 $mingwBin = Join-Path $MsysRoot "mingw64\bin"
 $python = Join-Path $mingwBin "python.exe"
 $cmake = Join-Path $mingwBin "cmake.exe"
 $pacman = Join-Path $MsysRoot "usr\bin\pacman.exe"
-$lock = Get-Content (Join-Path $PSScriptRoot "windows-build-lock.json") -Raw | ConvertFrom-Json
 
 function Invoke-External {
     param(
@@ -48,42 +47,6 @@ function Remove-SafeBuildPath {
     if (Test-Path -LiteralPath $fullPath) {
         Remove-Item -LiteralPath $fullPath -Recurse -Force
     }
-}
-
-function Ensure-GitDependency {
-    param(
-        [Parameter(Mandatory = $true)]$Dependency,
-        [Parameter(Mandatory = $true)][string]$Destination
-    )
-    if (-not (Test-Path -LiteralPath (Join-Path $Destination ".git"))) {
-        New-Item -ItemType Directory -Path (Split-Path -Parent $Destination) -Force | Out-Null
-        Invoke-External -FilePath "git" -ArgumentList @(
-            "clone", "--filter=blob:none", "--no-checkout", $Dependency.repository, $Destination
-        )
-    }
-    $currentRevision = (& git -C $Destination rev-parse HEAD 2>$null)
-    if ($LASTEXITCODE -ne 0 -or $currentRevision.Trim() -ne $Dependency.revision) {
-        Invoke-External -FilePath "git" -ArgumentList @(
-            "-C", $Destination, "fetch", "--depth", "1", "origin", $Dependency.revision
-        )
-        Invoke-External -FilePath "git" -ArgumentList @(
-            "-C", $Destination, "checkout", "--detach", $Dependency.revision
-        )
-    }
-}
-
-function Apply-DependencyPatch {
-    param(
-        [Parameter(Mandatory = $true)][string]$DependencyRoot,
-        [Parameter(Mandatory = $true)][string]$PatchPath
-    )
-    & git -C $DependencyRoot apply --unidiff-zero --reverse --check $PatchPath 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        return
-    }
-    Invoke-External -FilePath "git" -ArgumentList @(
-        "-C", $DependencyRoot, "apply", "--unidiff-zero", "--whitespace=nowarn", $PatchPath
-    )
 }
 
 if ($Bootstrap) {
@@ -119,13 +82,13 @@ if ($Clean) {
 }
 
 if (-not $SkipNative) {
-    $audioSource = Join-Path $depsRoot "libopenshot-audio"
-    $libSource = Join-Path $depsRoot "libopenshot"
-    Ensure-GitDependency $lock.libopenshotAudio $audioSource
-    Ensure-GitDependency $lock.libopenshot $libSource
-    Apply-DependencyPatch $libSource (Join-Path $PSScriptRoot "patches\libopenshot-gcc16-cstdint.patch")
-    Apply-DependencyPatch $libSource (Join-Path $PSScriptRoot "patches\libopenshot-modern-hardware-decode.patch")
-    Apply-DependencyPatch $libSource (Join-Path $PSScriptRoot "patches\libopenshot-modern-nvenc-options.patch")
+    $audioSource = Join-Path $sourceRoot "libopenshot-audio"
+    $libSource = Join-Path $sourceRoot "libopenshot"
+    foreach ($requiredSource in @($audioSource, $libSource)) {
+        if (-not (Test-Path -LiteralPath (Join-Path $requiredSource "CMakeLists.txt") -PathType Leaf)) {
+            throw "Required native source tree was not found: $requiredSource"
+        }
+    }
 
     $audioBuild = Join-Path $nativeRoot "audio"
     $libBuild = Join-Path $nativeRoot "libopenshot"

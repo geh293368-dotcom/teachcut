@@ -1,0 +1,4 @@
+# Preserve the imported upstream baseline as-is. These trees contain legacy
+# whitespace that is unrelated to TeachCut changes and should not block imports.
+/native/libopenshot/** -whitespace
+/native/libopenshot-audio/** -whitespace

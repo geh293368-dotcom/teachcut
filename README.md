@@ -54,7 +54,13 @@ TeachCut 分支提供 Win11 x64 一键构建入口，统一完成原生库编译
 .\scripts\build-windows.ps1
 ```
 
-首次配置、依赖锁定和 RTX 显卡验证方法见 [Windows 构建与验证](scripts/README-windows.md)。
+`libopenshot` 与 `libopenshot-audio` 已纳入 `native` 目录，应用与底层引擎可以在同一次提交中修改和回滚。需要保留按日期与提交号命名的成品时，运行：
+
+```powershell
+.\scripts\package-windows.ps1
+```
+
+首次配置、版本打包和 RTX 显卡验证方法见 [Windows 构建与验证](scripts/README-windows.md)。
 
 Win11 + RTX 4090 的 4K 解码/导出实测结果见 [4K 性能基线](docs/performance/rtx4090-4k-baseline.md)。导出窗口另外提供 `YouTube (4K NVIDIA)`、`MP4 (HEVC NVIDIA)` 和实验性的 `MP4 (AV1 NVIDIA)` 预设。
 

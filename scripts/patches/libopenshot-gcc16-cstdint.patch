@@ -1,9 +1,0 @@
-diff --git a/src/AudioLocation.h b/src/AudioLocation.h
---- a/src/AudioLocation.h
-+++ b/src/AudioLocation.h
-@@ -17,2 +17,4 @@
--namespace openshot
-+#include <cstdint>
-+
-+namespace openshot
- {

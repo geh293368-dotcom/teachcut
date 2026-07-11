@@ -1,11 +1,13 @@
 {
   "libopenshotAudio": {
-    "repository": "https://github.com/OpenShot/libopenshot-audio.git",
-    "revision": "48516e0b64b9f3ddf2ab79975a42ba2f37023703"
+    "source": "native/libopenshot-audio",
+    "upstreamRepository": "https://github.com/OpenShot/libopenshot-audio.git",
+    "upstreamRevision": "48516e0b64b9f3ddf2ab79975a42ba2f37023703"
   },
   "libopenshot": {
-    "repository": "https://github.com/OpenShot/libopenshot.git",
-    "revision": "8f1f091c1d90f9b1acbef45ed09fb3f440d85a94"
+    "source": "native/libopenshot",
+    "upstreamRepository": "https://github.com/OpenShot/libopenshot.git",
+    "upstreamRevision": "8f1f091c1d90f9b1acbef45ed09fb3f440d85a94"
   },
   "validatedToolchain": {
     "msys2": "2026-03-22",
