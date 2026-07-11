@@ -98,6 +98,18 @@ namespace openshot
 	/// Get the Renderer pointer address (for Python to cast back into a VideoRenderer)
 	uintptr_t GetRendererQObject();
 
+	/// Present one Frame immediately. Primarily used by renderer verification tools.
+	void PresentFrame(std::shared_ptr<openshot::Frame> frame);
+
+	/// Return native presentation counters as JSON.
+	std::string PresentationMetricsJson();
+
+	/// Reset native presentation counters.
+	void ResetPresentationMetrics();
+
+	/// Save the next directly presented D3D11 frame for verification.
+	void CaptureNextPresentation(const std::string& path);
+
 	/// Get the Playback speed
 	float Speed();
 

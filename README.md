@@ -62,7 +62,7 @@ TeachCut 分支提供 Win11 x64 一键构建入口，统一完成原生库编译
 
 首次配置、版本打包和 RTX 显卡验证方法见 [Windows 构建与验证](scripts/README-windows.md)。
 
-Win11 + RTX 4090 的 4K 解码/导出实测结果见 [4K 性能基线](docs/performance/rtx4090-4k-baseline.md)，D3D11 共享设备、GPU Frame 和按需回读的阶段结果见 [D3D11 零拷贝基础层验证](docs/performance/d3d11-zero-copy-foundation.md)。导出窗口另外提供 `YouTube (4K NVIDIA)`、`MP4 (HEVC NVIDIA)` 和实验性的 `MP4 (AV1 NVIDIA)` 预设。
+Win11 + RTX 4090 的 4K 解码/导出实测结果见 [4K 性能基线](docs/performance/rtx4090-4k-baseline.md)，D3D11 共享设备、GPU Frame 和按需回读的阶段结果见 [D3D11 零拷贝基础层验证](docs/performance/d3d11-zero-copy-foundation.md)，Qt 6 窗口直显结果见 [D3D11 原生预览呈现器验证](docs/performance/d3d11-direct-presenter.md)。导出窗口另外提供 `YouTube (4K NVIDIA)`、`MP4 (HEVC NVIDIA)` 和实验性的 `MP4 (AV1 NVIDIA)` 预设。
 
 Windows 默认使用 Qt 6，并保留 Qt 5 回退构建；`TeachCut Modern` 主题与 SVG/PNG 混合图标规范见 [界面现代化与 Qt 迁移基线](docs/ui-modernization.md)。
 

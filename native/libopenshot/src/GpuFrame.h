@@ -17,6 +17,8 @@ struct AVFrame;
 
 namespace openshot {
 
+class D3D11VideoPresenter;
+
 class GpuFrameSurface {
 private:
 	AVFrame *frame = nullptr;
@@ -27,6 +29,7 @@ private:
 	mutable std::atomic<uint64_t> download_nanoseconds{0};
 
 	explicit GpuFrameSurface(const AVFrame *source_frame);
+	friend class D3D11VideoPresenter;
 
 public:
 	~GpuFrameSurface();

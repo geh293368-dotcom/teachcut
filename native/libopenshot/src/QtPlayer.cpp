@@ -234,6 +234,28 @@ namespace openshot
     	return addr;
     }
 
+    void QtPlayer::PresentFrame(std::shared_ptr<openshot::Frame> frame) {
+        if (p && p->renderer)
+            p->renderer->paint(frame);
+    }
+
+    std::string QtPlayer::PresentationMetricsJson() {
+        auto* renderer = dynamic_cast<VideoRenderer*>(p->renderer);
+        return renderer ? renderer->PerformanceMetricsJson() : "{}";
+    }
+
+    void QtPlayer::ResetPresentationMetrics() {
+        auto* renderer = dynamic_cast<VideoRenderer*>(p->renderer);
+        if (renderer)
+            renderer->ResetPerformanceMetrics();
+    }
+
+    void QtPlayer::CaptureNextPresentation(const std::string& path) {
+        auto* renderer = dynamic_cast<VideoRenderer*>(p->renderer);
+        if (renderer)
+            renderer->CaptureNextFrame(path);
+    }
+
     // Get the Playback speed
     float QtPlayer::Speed() {
     	return speed;

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "RendererBase.h"
+#include "GpuFrame.h"
 using namespace openshot;
 
 RendererBase::RendererBase()
@@ -23,6 +24,15 @@ RendererBase::~RendererBase()
 
 void RendererBase::paint(const std::shared_ptr<Frame> & frame)
 {
-	if (frame)
-		this->render(frame->GetImage());
+	if (!frame)
+		return;
+	if (frame->gpu_surface && this->renderGpu(frame->gpu_surface))
+		return;
+	this->render(frame->GetImage());
+}
+
+bool RendererBase::renderGpu(std::shared_ptr<GpuFrameSurface> surface)
+{
+	(void) surface;
+	return false;
 }

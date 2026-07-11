@@ -43,6 +43,7 @@ namespace openshot
 	class AudioResampler;
 	class FFmpegReader;
 	class GpuFrameSurface;
+	class RendererBase;
 
 	enum FrameStorageMode {
 		FRAME_STORAGE_CPU = 0,
@@ -124,6 +125,7 @@ namespace openshot
 		/// Attach an immutable D3D11 surface. Only FFmpegReader can create GPU-backed frames.
 		void AddGpuSurface(std::shared_ptr<GpuFrameSurface> surface);
 		friend class FFmpegReader;
+		friend class RendererBase;
 
 	public:
 		std::shared_ptr<juce::AudioBuffer<float>> audio;

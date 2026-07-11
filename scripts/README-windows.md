@@ -61,6 +61,14 @@
 
 该验证只对独立 `FFmpegReader` 开启零拷贝实验开关；时间线、多轨、特效和正常应用预览仍默认使用已经验证的 CPU/QImage 回退路径。当前实现与 RTX 4090 实测见 [D3D11 零拷贝基础层验证](../docs/performance/d3d11-zero-copy-foundation.md)。
 
+验证 D3D11 VideoProcessor 到 Qt 6 原生窗口的直接呈现：
+
+```powershell
+.\scripts\verify-d3d11-presenter.ps1 -QtMajor 6 -Frames 60
+```
+
+该命令会短暂打开并自动关闭一个验证窗口，最后一帧抓图保存在 `build\benchmarks\d3d11-presenter-last-frame.png`。实现边界与实测见 [D3D11 原生预览呈现器验证](../docs/performance/d3d11-direct-presenter.md)。
+
 默认输出位置：
 
 - Qt 6 原生安装树：`build\install-x64-qt6`

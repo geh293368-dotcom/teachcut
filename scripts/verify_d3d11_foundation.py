@@ -17,10 +17,13 @@ def configure_windows_dll_search():
     if os.name != "nt" or not hasattr(os, "add_dll_directory"):
         return
     repo_root = pathlib.Path(__file__).resolve().parents[1]
-    candidates = (
-        repo_root / "build" / "install-x64" / "bin",
+    configured_root = os.environ.get("OPENSHOT_INSTALL_ROOT")
+    candidates = [
+        pathlib.Path(configured_root) / "bin"
+        if configured_root
+        else repo_root / "build" / "install-x64-qt6" / "bin",
         pathlib.Path(sys.executable).resolve().parent,
-    )
+    ]
     for candidate in candidates:
         if candidate.is_dir():
             DLL_DIRECTORY_HANDLES.append(os.add_dll_directory(str(candidate)))

@@ -38,9 +38,9 @@ $env:PATH = "$installRoot\bin;$(Join-Path $MsysRoot 'mingw64\bin');$env:PATH"
 $env:PYTHONPATH = "$installRoot\python;$repoRoot\src"
 $env:OPENSHOT_INSTALL_ROOT = $installRoot
 $env:OPENSHOT_QT_API = if ($QtMajor -eq 6) { "pyqt6" } else { "pyqt5" }
-$env:QT_QPA_PLATFORM = "offscreen"
+$env:QT_QPA_PLATFORM = "windows"
 
-& $python (Join-Path $PSScriptRoot "verify_d3d11_foundation.py") $InputPath --frames $Frames
+& $python (Join-Path $PSScriptRoot "verify_d3d11_presenter.py") $InputPath --frames $Frames
 if ($LASTEXITCODE -ne 0) {
-    throw "D3D11 foundation verification failed."
+    throw "D3D11 presenter verification failed."
 }

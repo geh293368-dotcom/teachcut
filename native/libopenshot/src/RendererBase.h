@@ -21,6 +21,7 @@
 namespace openshot
 {
     class Frame;
+    class GpuFrameSurface;
 
     /**
      * @brief This is the base class of all Renderers in libopenshot.
@@ -41,6 +42,9 @@ namespace openshot
     protected:
 	RendererBase();
 	virtual ~RendererBase();
+
+	/// Try to render a retained GPU surface. Return false to request CPU fallback.
+	virtual bool renderGpu(std::shared_ptr<GpuFrameSurface> surface);
 
 	virtual void render(std::shared_ptr<QImage> image) = 0;
     };

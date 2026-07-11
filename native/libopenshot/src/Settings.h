@@ -74,6 +74,10 @@ namespace openshot {
 		/// This is an experimental foundation switch and remains disabled by default.
 		bool ENABLE_D3D11_ZERO_COPY = false;
 
+		/// Present eligible D3D11-backed Frames directly to a native Windows widget.
+		/// Requires ENABLE_D3D11_ZERO_COPY and remains disabled by default.
+		bool ENABLE_D3D11_DIRECT_PRESENT = false;
+
 		/// Scale mode used in FFmpeg decoding and encoding (used as an optimization for faster previews)
 		bool HIGH_QUALITY_SCALING = false;
 

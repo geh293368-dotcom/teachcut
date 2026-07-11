@@ -63,6 +63,7 @@ set(OPENSHOT_SOURCES
   Coordinate.cpp
   CrashHandler.cpp
   D3D11DeviceManager.cpp
+  D3D11VideoPresenter.cpp
   DummyReader.cpp
   ReaderBase.cpp
   RendererBase.cpp
