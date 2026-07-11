@@ -359,7 +359,7 @@ if sys.platform == "win32":
     extra_exe = {"base": None, "name": exe_name + "-cli.exe"}
 
     # Standard graphical Win32 launcher
-    base = "Win32GUI"
+    base = "gui"
     build_exe_options["include_msvcr"] = True
     exe_name += ".exe"
 
@@ -446,7 +446,8 @@ if sys.platform == "win32":
     src_files.append((os.path.join(PATH, "installer", "qt.conf"), "qt.conf"))
     for filename in find_files("openshot_qt", ["*"]):
         if should_package_source_file(filename):
-            src_files.append((filename, os.path.join(os.path.relpath(filename, start=openshot_copy_path))))
+            relative_path = os.path.relpath(filename, start=openshot_copy_path)
+            src_files.append((filename, os.path.join("lib", relative_path)))
 
 elif sys.platform == "linux":
     # Find libopenshot.so path (GitLab copies artifacts into local build/install folder)
@@ -703,9 +704,9 @@ build_options["build_exe"] = build_exe_options
 exes = [Executable("openshot_qt/launch.py",
                    base=base,
                    icon=os.path.join(PATH, "xdg", iconFile),
-                   shortcutName="%s" % info.PRODUCT_NAME,
-                   shortcutDir="ProgramMenuFolder",
-                   targetName=exe_name,
+                   shortcut_name="%s" % info.PRODUCT_NAME,
+                   shortcut_dir="ProgramMenuFolder",
+                   target_name=exe_name,
                    copyright=info.COPYRIGHT)]
 
 try:
@@ -713,7 +714,7 @@ try:
     exes.append(Executable("openshot_qt/launch.py",
                 base=extra_exe['base'],
                 icon=os.path.join(PATH, "xdg", iconFile),
-                targetName=extra_exe['name'],
+                target_name=extra_exe['name'],
                 copyright=info.COPYRIGHT))
 except NameError:
     pass
