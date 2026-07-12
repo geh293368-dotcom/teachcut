@@ -1,9 +1,11 @@
 import json
+import sys
 import unittest
 
 import openshot
 
 
+@unittest.skipUnless(sys.platform == "win32", "D3D11 GPU frame support is Windows-specific")
 class GpuFrameFoundationTests(unittest.TestCase):
     def test_regular_frame_defaults_to_cpu_storage(self):
         frame = openshot.Frame(1, 16, 9, "#000000")

@@ -23,10 +23,14 @@ $sourceRoot = Join-Path $repoRoot "native"
 $nativeRoot = if ($QtMajor -eq 5) { Join-Path $buildRoot "native" } else { Join-Path $buildRoot "native-qt6" }
 $installRoot = if ($QtMajor -eq 5) { Join-Path $buildRoot "install-x64" } else { Join-Path $buildRoot "install-x64-qt6" }
 $bundleRoot = Join-Path $buildRoot "exe.qt$QtMajor"
-$mingwBin = Join-Path $MsysRoot "mingw64\bin"
+$mingwRoot = Join-Path $MsysRoot "mingw64"
+$mingwBin = Join-Path $mingwRoot "bin"
 $python = Join-Path $mingwBin "python.exe"
 $cmake = Join-Path $mingwBin "cmake.exe"
 $pacman = Join-Path $MsysRoot "usr\bin\pacman.exe"
+$protobufInclude = Join-Path $mingwRoot "include"
+$protobufLibrary = Join-Path $mingwRoot "lib\libprotobuf.dll.a"
+$protobufProtoc = Join-Path $mingwBin "protoc.exe"
 
 function Invoke-External {
     param(
@@ -70,7 +74,13 @@ if ($Bootstrap) {
     )
 }
 
-foreach ($requiredTool in @($python, $cmake, (Join-Path $mingwBin "ninja.exe"))) {
+foreach ($requiredTool in @(
+    $python,
+    $cmake,
+    (Join-Path $mingwBin "ninja.exe"),
+    $protobufLibrary,
+    $protobufProtoc
+)) {
     if (-not (Test-Path -LiteralPath $requiredTool -PathType Leaf)) {
         throw "Required Windows build tool was not found: $requiredTool. Run with -Bootstrap first."
     }
@@ -142,8 +152,33 @@ if (-not $SkipNative) {
         "-DENABLE_OPENCV=ON",
         "-DUSE_HW_ACCEL=ON",
         "-DUSE_QT6=$(if ($QtMajor -eq 6) { 'ON' } else { 'OFF' })",
-        "-DUSE_SYSTEM_JSONCPP=ON"
+        "-DUSE_SYSTEM_JSONCPP=ON",
+        "-DProtobuf_INCLUDE_DIR=$protobufInclude",
+        "-DProtobuf_LIBRARY_RELEASE=$protobufLibrary",
+        "-DProtobuf_LIBRARY_DEBUG=$protobufLibrary",
+        "-DProtobuf_PROTOC_EXECUTABLE=$protobufProtoc"
     )
+
+    # GitHub Windows runners also ship MySQL, whose MSVC libprotobuf.lib can
+    # otherwise win CMake's search ahead of the MSYS2 MinGW import library.
+    $cmakeCache = Join-Path $libBuild "CMakeCache.txt"
+    $protobufCacheEntries = Get-Content -LiteralPath $cmakeCache |
+        Where-Object { $_ -match '^Protobuf_LIBRARY_(DEBUG|RELEASE):FILEPATH=' }
+    if (-not $protobufCacheEntries) {
+        throw "CMake did not record a Protobuf library in $cmakeCache"
+    }
+    $expectedProtobufLibrary = [IO.Path]::GetFullPath($protobufLibrary)
+    foreach ($entry in $protobufCacheEntries) {
+        $selectedLibrary = ($entry -split '=', 2)[1]
+        if (-not $selectedLibrary -or
+            -not [IO.Path]::GetFullPath($selectedLibrary).Equals(
+                $expectedProtobufLibrary,
+                [StringComparison]::OrdinalIgnoreCase
+            )) {
+            throw "CMake selected an unexpected Protobuf library: $selectedLibrary (expected $expectedProtobufLibrary)"
+        }
+    }
+
     Invoke-External -FilePath $cmake -ArgumentList @(
         "--build", $libBuild, "--config", $Configuration, "--target", "install"
     )
