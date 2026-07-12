@@ -66,6 +66,8 @@ Win11 + RTX 4090 的 4K 解码/导出实测结果见 [4K 性能基线](docs/perf
 
 Windows 默认使用 Qt 6，并保留 Qt 5 回退构建；`TeachCut Modern` 主题与 SVG/PNG 混合图标规范见 [界面现代化与 Qt 迁移基线](docs/ui-modernization.md)。
 
+当前项目状态、主要技术边界以及 2026-07-12 至 2026-07-18 的开发安排见 [TeachCut 项目状态与近期开发计划](docs/project-status-and-plan.md)。
+
 ## 文档
 
 可以使用 Sphinx 生成精美的 HTML 文档。
